@@ -97,8 +97,7 @@ export interface FetchedBlob {
 /** Constructor options for {@link WaldropClient}. */
 export interface WaldropClientOptions {
   /**
-   * Network selector. Currently testnet only — mainnet will be added
-   * once Waldrop contracts deploy there. Defaults to `"testnet"`.
+   * Network selector. Mainnet only. Defaults to `"mainnet"`.
    *
    * Independent of `suiGrpcUrl` / `walrusAggregatorUrl`: this just
    * picks which built-in default URL set to use. To use entirely
