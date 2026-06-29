@@ -1,35 +1,30 @@
 // Waldrop deployed contract IDs and default infrastructure URLs.
 // Mirrored from `waldrop_app/src/config/contracts.ts` so the SDK can
 // be used without depending on the dapp.
-//
-// ⚠️ Testnet-only for now. Mainnet support will be added once the
-// contracts are deployed there. Custom RPC + aggregator URLs can be
-// passed to the WaldropClient constructor in the meantime — see
-// `WaldropClientOptions.suiGrpcUrl` and `.walrusAggregatorUrl`.
 
-/** Sui Move package id for the Waldrop contracts on testnet.
- *  Redeployed 2026-05-17 (16:54 UTC) — refreshed Display<T> templates;
- *  carries all prior security cleanups (treasury rate-limit dropped,
- *  SEAL legacy identity dropped, amount_paid_usdc_equivalent dropped,
- *  register_quilt O(n) gas fix). Multi-coin pricing preserved via
- *  plan.prices VecMap. */
+/** Sui Move package id for the Waldrop contracts on mainnet.
+ *  Redeployed 2026-06-28 (digest BZcHVS5GeMVFaNDRF4dAk7br9vYjzgyGRE657zfsL1a2)
+ *  to ship the storage fix: `extend_blob` no longer asserts the bogus
+ *  `expiry_epoch > ctx.epoch()` check that compared Walrus epochs (~14d)
+ *  against Sui epochs (~24h). Walrus's own `extend_blob` PTB call
+ *  enforces the real expiry guard. */
 export const PACKAGE_ID =
-  "0x829c3d2ae14ec3696bdb74d4f2c8e7dbfcd7cd8c4abc8b13109b94ef36e59a57";
+  "0x42c1b5c270d2f583b7ba79c369e1e8213c050cbfa42dda4649519e2c196bdc93";
 
 /** Shared object IDs published alongside the package. */
 export const SHARED_OBJECTS = {
   globalConfig:
-    "0x883307bc567c2f2a343babc6ed53a2b5bd174626fb12024693031282db7bdb65",
+    "0x7562d6188b9fcb8812b92132d411558dc81f6bfb0cf4d994e4c3c0d75261eb61",
   planRegistry:
-    "0x410f9b9e47df988fb46c9e47df8e33a3c4e192ec358a69edd599b1fe1067acb2",
-  treasury: "0xaf0db74ec17b325860ead9e05146e3448b3ddb3e7d422731ac8f6e55f99d17ec",
+    "0x48a42c77d8d6a59e6ba8f731d38e7d37a856b4bee69e139c6d9f9ffb007c15fc",
+  treasury: "0x3cd593984eb1e1df41d21c6f828e98bdb5f08ab95b99ee0d9179ef9e37ad9bd6",
   loyaltyConfig:
-    "0x14e65f584f22cafcd695af13035e13a4d48f3425fb50ad798c1c34b4ff2061f0",
+    "0x50e02d776a1cf9af79f835abf5aaff5604033c989bff4630423284dd140ba354",
   tokenPolicy:
-    "0x4de1f32bafb8bade67a8694b1a73c3f6f544f5204d9b65798504bd1acf5123af",
+    "0x09f977ff6fa129cba20e495832bed751945f40821dedf268b89ac8ca637bc8d9",
   // Loyalty points coin Currency object (CoinRegistry::new_currency_with_otw).
   loyaltyCurrency:
-    "0xe96d1f8fb31872f42c6ba5fc3f735c63dd20c863bbed0f28aa80851126b1bc33",
+    "0x5aaf56f00f5b5f707eaa8dd37ecc914d2a0bfda0b38ae17adfdae07ff320ddb3",
 } as const;
 
 /** Fully-qualified Move types — used by Sui object queries. */
@@ -43,35 +38,32 @@ export const TYPES = {
   LoyaltyConfig: `${PACKAGE_ID}::loyalty::LoyaltyConfig`,
 } as const;
 
-/** Networks the SDK supports. Currently testnet only — mainnet will
- *  be added when contracts are deployed there. */
-export type WaldropNetwork = "testnet";
+/** Networks the SDK supports. Mainnet only — testnet contracts are
+ *  not maintained. */
+export type WaldropNetwork = "mainnet";
 
 /** Default Sui gRPC endpoint. Override via `WaldropClientOptions.suiGrpcUrl`
  *  to point at your own fullnode, a regional caching mirror, etc. */
 export const SUI_GRPC_URLS: Record<WaldropNetwork, string> = {
-  testnet: "https://fullnode.testnet.sui.io:443",
+  mainnet: "https://fullnode.mainnet.sui.io:443",
 };
 
 /** Default Walrus aggregator URL. The aggregator is the read-side
  *  endpoint — fetches blob bytes by blob_id.
  *
  *  Override via `WaldropClientOptions.walrusAggregatorUrl` to point at
- *  your own aggregator, the public testnet one
- *  (`https://aggregator.walrus-testnet.walrus.space`), a regional
- *  caching mirror, etc. */
+ *  your own aggregator, a regional caching mirror, etc. */
 export const WALRUS_AGGREGATOR_URLS: Record<WaldropNetwork, string> = {
-  testnet: "https://walrus.waldrop.xyz/aggregator",
+  mainnet: "https://walrus.waldrop.xyz/aggregator",
 };
 
 /** Default Walrus publisher URL — the write-side endpoint used by
- *  `client.blob.upload`. Defaults to the public Walrus testnet publisher,
- *  which accepts unauthenticated requests. Override via
- *  `WaldropClientOptions.walrusPublisherUrl` (and pass `Authorization`
- *  via `UploadBlobArgs.publisherHeaders`) to use a JWT-authed publisher
- *  like the dapp's `https://walrus.waldrop.xyz/publisher`. */
+ *  `client.blob.upload`. Defaults to the Waldrop publisher (JWT-authed).
+ *  Override via `WaldropClientOptions.walrusPublisherUrl` (and pass
+ *  `Authorization` via `UploadBlobArgs.publisherHeaders`) to use a
+ *  different publisher. */
 export const WALRUS_PUBLISHER_URLS: Record<WaldropNetwork, string> = {
-  testnet: "https://publisher.walrus-testnet.walrus.space",
+  mainnet: "https://walrus.waldrop.xyz/publisher",
 };
 
 /** Pagination cap when walking the BlobStore Table. Walrus aggregator
@@ -83,18 +75,12 @@ export const DEFAULT_PAGE_SIZE = 50;
  *  occasionally take a few seconds for cold reads. */
 export const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
-/** SEAL key server object ids per network. Two independent verified
- *  servers run by Mysten Labs / partners; threshold = 1 (any one of
- *  them suffices to recover the key). Mirrors the dapp's `useSeal`
- *  hook so SDK-encrypted bytes are decryptable by the dapp and vice
- *  versa.
- *
- *  https://seal-docs.wal.app/Pricing#verified-independent-server-type-key-servers
- */
+/** SEAL key server object ids. Mysten mainnet committee — 5-of-8 threshold
+ *  aggregator. The dapp uses one entry (the aggregator handles the threshold
+ *  internally); the SDK must round-trip with the dapp so this matches. */
 export const SEAL_KEY_SERVERS: Record<WaldropNetwork, readonly string[]> = {
-  testnet: [
-    "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
-    "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
+  mainnet: [
+    "0x686098f1439237fff9f36b99c7329683c22979d2005c2465cb891acb012a7595",
   ],
 };
 

@@ -77,7 +77,7 @@ export class WaldropClient {
   }
 
   constructor(options: WaldropClientOptions = {}) {
-    const network = options.network ?? "testnet";
+    const network = options.network ?? "mainnet";
 
     // Caller-supplied SuiClient wins (lets dapps reuse a dapp-kit
     // client). Otherwise build one from network defaults.

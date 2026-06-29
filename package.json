@@ -1,6 +1,6 @@
 {
   "name": "@waldrop/sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Read-only TypeScript SDK for Waldrop - list and fetch your Walrus-stored blobs registered through the Waldrop on-chain registry.",
   "license": "MIT",
   "author": "Waldrop",
